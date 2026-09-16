@@ -2,11 +2,12 @@
 """
 generate_cases.py — synthetic DNS TTL boundary cases
 No network, no DNS queries, deterministic seed 42.
+Adds RFC 8767 AA-bit and stale-response-TTL distinctions.
 """
 import json
+import pathlib
 
 cases = [
-    # positive inside TTL — fresh serve
     {
         "case_id": "c01_positive_inside_ttl",
         "category": "positive",
@@ -22,6 +23,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -31,13 +33,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": False,
-            "may_evict_early": True,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": True, "must_not_serve_stale": False, "serve_stale_allowed": False, "may_evict_early": True, "ttl_upper_bound": True},
         "reason": "inside TTL 100/300 fresh"
     },
     {
@@ -55,6 +51,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -64,16 +61,9 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": False,
-            "may_evict_early": True,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": True, "must_not_serve_stale": False, "serve_stale_allowed": False, "may_evict_early": True, "ttl_upper_bound": True},
         "reason": "1s remaining still fresh"
     },
-    # resolver evicts / refetches before TTL expiry — allowed (upper bound)
     {
         "case_id": "c03_early_evict_before_expiry",
         "category": "implementation_freedom",
@@ -89,6 +79,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -99,14 +90,7 @@ cases = [
         "received_ttl": 3600,
         "ttl_zero": False,
         "action": "resolver_evicts_at_100_and_refetches",
-        "expect": {
-            "may_serve_from_cache": True,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": False,
-            "may_evict_early": True,
-            "ttl_upper_bound": True,
-            "early_evict_compliant": True,
-        },
+        "expect": {"may_serve_from_cache": True, "must_not_serve_stale": False, "serve_stale_allowed": False, "may_evict_early": True, "ttl_upper_bound": True, "early_evict_compliant": True},
         "reason": "RFC2181 maximum not mandatory — early evict allowed"
     },
     {
@@ -124,6 +108,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -134,17 +119,9 @@ cases = [
         "received_ttl": 86400,
         "ttl_zero": False,
         "action": "resolver_refreshes_at_3600_despite_ttl",
-        "expect": {
-            "may_serve_from_cache": True,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": False,
-            "may_evict_early": True,
-            "ttl_upper_bound": True,
-            "early_evict_compliant": True,
-        },
+        "expect": {"may_serve_from_cache": True, "must_not_serve_stale": False, "serve_stale_allowed": False, "may_evict_early": True, "ttl_upper_bound": True, "early_evict_compliant": True},
         "reason": "no floor on refetching unexpired RRs"
     },
-    # expired with authority reachable — must NOT serve stale ordinarily
     {
         "case_id": "c05_expired_authority_reachable",
         "category": "expired_ordinary",
@@ -161,6 +138,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -170,14 +148,8 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "may_evict_early": True,
-            "ttl_upper_bound": True,
-        },
-        "reason": "expired and authority reachable — ordinary stale NOT allowed"
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "may_evict_early": True, "ttl_upper_bound": True, "authoritative_refresh": True},
+        "reason": "expired and authority reachable NOERROR AA=1 — refresh established, stale NOT allowed"
     },
     {
         "case_id": "c06_expired_authority_reachable_nodata",
@@ -195,6 +167,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -204,16 +177,9 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 60,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "may_evict_early": True,
-            "ttl_upper_bound": True,
-        },
-        "reason": "expired TXT but reachable — must refetch not serve stale"
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "may_evict_early": True, "ttl_upper_bound": True, "authoritative_refresh": True},
+        "reason": "expired TXT but reachable NOERROR AA=1 — must refetch not serve stale"
     },
-    # expired retained and served under RFC8767 failure conditions
     {
         "case_id": "c07_stale_8767_authority_unreachable",
         "category": "serve_stale",
@@ -230,6 +196,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": False,
         "authority_rcode": None,
+        "authority_aa": False,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -240,15 +207,8 @@ cases = [
         "received_ttl": 300,
         "ttl_zero": False,
         "stale_response_ttl": 30,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": True,
-            "stale_ttl_must_be_positive": True,
-            "stale_ttl_recommended": 30,
-            "ttl_upper_bound": True,
-        },
-        "reason": "RFC8767: expired but authority unreachable + RD + within max-stale"
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": True, "stale_ttl_valid": True, "stale_ttl_recommended_value": True, "ttl_upper_bound": True},
+        "reason": "RFC8767: expired but authority unreachable + RD + within max-stale, TTL 30 valid and recommended"
     },
     {
         "case_id": "c08_stale_8767_servfail_treated_as_failure",
@@ -266,6 +226,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 2,
+        "authority_aa": False,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -276,14 +237,7 @@ cases = [
         "received_ttl": 300,
         "ttl_zero": False,
         "stale_response_ttl": 30,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": True,
-            "stale_ttl_must_be_positive": True,
-            "stale_ttl_recommended": 30,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": True, "stale_ttl_valid": True, "stale_ttl_recommended_value": True, "ttl_upper_bound": True},
         "reason": "RCODE SERVFAIL treated as failure to refresh — stale allowed"
     },
     {
@@ -302,6 +256,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": False,
         "authority_rcode": None,
+        "authority_aa": False,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -312,13 +267,7 @@ cases = [
         "received_ttl": 300,
         "ttl_zero": False,
         "stale_response_ttl": 30,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": True,
-            "stale_ttl_must_be_positive": True,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": True, "stale_ttl_valid": True, "ttl_upper_bound": True},
         "reason": "stale age 79700 within max_stale 86400 — still allowed"
     },
     {
@@ -337,6 +286,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": False,
         "authority_rcode": None,
+        "authority_aa": False,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -346,15 +296,9 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "ttl_upper_bound": True},
         "reason": "beyond max-stale — must be purged, not served"
     },
-    # expired when recursion not requested — must not serve stale
     {
         "case_id": "c11_expired_no_rd_flag",
         "category": "serve_stale",
@@ -371,6 +315,7 @@ cases = [
         "rd_flag": False,
         "authority_reachable": False,
         "authority_rcode": None,
+        "authority_aa": False,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -380,13 +325,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "ttl_upper_bound": True,
-            "no_rd_means_no_stale": True,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "ttl_upper_bound": True, "no_rd_means_no_stale": True},
         "reason": "RD=0 — RFC8767 says return referral not stale"
     },
     {
@@ -404,6 +343,7 @@ cases = [
         "rd_flag": False,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -413,15 +353,9 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "must_not_serve_stale": False,
-            "serve_stale_allowed": False,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": True, "must_not_serve_stale": False, "serve_stale_allowed": False, "ttl_upper_bound": True},
         "reason": "RD=0 but still inside TTL — fresh cache hit ok (iterative not needed)"
     },
-    # TTL 0 — not cached
     {
         "case_id": "c13_ttl_zero_not_cached",
         "category": "ttl_zero",
@@ -438,6 +372,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -447,13 +382,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 0,
         "ttl_zero": True,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "ttl_zero_no_cache": True,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "ttl_zero_no_cache": True, "ttl_upper_bound": True},
         "reason": "TTL 0 — usable only for transaction, not cached"
     },
     {
@@ -472,6 +401,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": False,
         "authority_rcode": None,
+        "authority_aa": False,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -481,16 +411,9 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 0,
         "ttl_zero": True,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "ttl_zero_no_cache": True,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "ttl_zero_no_cache": True, "ttl_upper_bound": True},
         "reason": "TTL 0 never enters cache — no stale to serve"
     },
-    # authoritative RRset containing differing TTLs
     {
         "case_id": "c15_rrset_differing_ttls",
         "category": "rrset",
@@ -508,6 +431,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -517,13 +441,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 500,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "rrset_ttls_differ": True,
-            "rrset_effective_ttl": 300,
-            "rrset_must_normalize": True,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": True, "rrset_ttls_differ": True, "rrset_effective_ttl": 300, "rrset_must_normalize": True, "ttl_upper_bound": True},
         "reason": "RFC2181 §5.2 RRset differing TTLs — effective is min"
     },
     {
@@ -543,6 +461,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -552,12 +471,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "rrset_ttls_differ": False,
-            "rrset_effective_ttl": 300,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": True, "rrset_ttls_differ": False, "rrset_effective_ttl": 300, "ttl_upper_bound": True},
         "reason": "uniform RRset TTL — no normalization needed"
     },
     {
@@ -577,6 +491,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -586,15 +501,9 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 60,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "rrset_ttls_differ": False,
-            "rrset_effective_ttl": 60,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": True, "rrset_ttls_differ": False, "rrset_effective_ttl": 60, "ttl_upper_bound": True},
         "reason": "single RR — trivial RRset"
     },
-    # negative caching
     {
         "case_id": "c18_negative_nxdomain_soa_minimum_smaller",
         "category": "negative",
@@ -610,6 +519,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 3,
+        "authority_aa": True,
         "soa_ttl": 3600,
         "soa_minimum": 300,
         "negative_type": "NXDOMAIN",
@@ -620,12 +530,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": None,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "negative_cache_ttl": 300,
-            "negative_ttl_is_soa_derived": True,
-            "negative_not_positive_ttl": True,
-        },
+        "expect": {"may_serve_from_cache": True, "negative_cache_ttl": 300, "negative_ttl_is_soa_derived": True, "negative_not_positive_ttl": True},
         "reason": "RFC2308: negative TTL = min(SOA TTL, MINIMUM) = min(3600,300)=300"
     },
     {
@@ -643,6 +548,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 3,
+        "authority_aa": True,
         "soa_ttl": 300,
         "soa_minimum": 3600,
         "negative_type": "NXDOMAIN",
@@ -653,12 +559,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": None,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "negative_cache_ttl": 300,
-            "negative_ttl_is_soa_derived": True,
-            "negative_not_positive_ttl": True,
-        },
+        "expect": {"may_serve_from_cache": True, "negative_cache_ttl": 300, "negative_ttl_is_soa_derived": True, "negative_not_positive_ttl": True},
         "reason": "min(300,3600)=300 — SOA TTL smaller case"
     },
     {
@@ -676,6 +577,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": 900,
         "soa_minimum": 300,
         "negative_type": "NODATA",
@@ -686,12 +588,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": None,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "negative_cache_ttl": 300,
-            "negative_ttl_is_soa_derived": True,
-            "negative_not_positive_ttl": True,
-        },
+        "expect": {"may_serve_from_cache": True, "negative_cache_ttl": 300, "negative_ttl_is_soa_derived": True, "negative_not_positive_ttl": True},
         "reason": "NODATA negative — also SOA derived"
     },
     {
@@ -710,6 +607,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 3,
+        "authority_aa": True,
         "soa_ttl": 3600,
         "soa_minimum": 300,
         "negative_type": "NXDOMAIN",
@@ -720,13 +618,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": None,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "negative_cache_ttl": 300,
-            "negative_expired": True,
-            "must_not_serve_stale": True,
-            "negative_ttl_is_soa_derived": True,
-        },
+        "expect": {"may_serve_from_cache": False, "negative_cache_ttl": 300, "negative_expired": True, "must_not_serve_stale": True, "negative_ttl_is_soa_derived": True},
         "reason": "negative cache expired — same upper-bound rule"
     },
     {
@@ -744,6 +636,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 3,
+        "authority_aa": True,
         "soa_ttl": 600,
         "soa_minimum": 600,
         "negative_type": "NXDOMAIN",
@@ -754,14 +647,9 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": None,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "negative_cache_ttl": 600,
-            "negative_ttl_is_soa_derived": True,
-        },
+        "expect": {"may_serve_from_cache": True, "negative_cache_ttl": 600, "negative_ttl_is_soa_derived": True},
         "reason": "SOA TTL == MINIMUM — negative TTL 600"
     },
-    # implementation clamps excessively large TTL
     {
         "case_id": "c23_clamp_large_ttl",
         "category": "clamp",
@@ -777,6 +665,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -788,13 +677,7 @@ cases = [
         "effective_ttl": 604800,
         "clamped": True,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "clamped": True,
-            "effective_ttl": 604800,
-            "received_ttl": 2147483647,
-            "ttl_upper_bound": True,
-        },
+        "expect": {"may_serve_from_cache": True, "clamped": True, "effective_ttl": 604800, "received_ttl": 2147483647, "ttl_upper_bound": True},
         "reason": "received 2^31-1 clamped to 7 days per RFC8767 cap"
     },
     {
@@ -812,6 +695,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -823,12 +707,7 @@ cases = [
         "effective_ttl": 604800,
         "clamped": True,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "clamped": True,
-            "effective_ttl": 604800,
-            "received_ttl": 1000000,
-        },
+        "expect": {"may_serve_from_cache": True, "clamped": True, "effective_ttl": 604800, "received_ttl": 1000000},
         "reason": "1M > 604800 clamped"
     },
     {
@@ -846,6 +725,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -857,14 +737,9 @@ cases = [
         "effective_ttl": 300,
         "clamped": False,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "clamped": False,
-            "effective_ttl": 300,
-        },
+        "expect": {"may_serve_from_cache": True, "clamped": False, "effective_ttl": 300},
         "reason": "300 < cap — not clamped"
     },
-    # additional boundary cases
     {
         "case_id": "c26_stale_disabled_config",
         "category": "serve_stale",
@@ -881,6 +756,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": False,
         "authority_rcode": None,
+        "authority_aa": False,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -890,11 +766,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False},
         "reason": "stale disabled — even with failure, no stale"
     },
     {
@@ -913,6 +785,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -922,13 +795,8 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "rcode_refreshes": True,
-        },
-        "reason": "NoError AA refreshes — not a failure, stale not allowed"
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "rcode_refreshes": True, "authoritative_refresh": True},
+        "reason": "NoError AA=1 refreshes — not a failure, stale not allowed"
     },
     {
         "case_id": "c28_negative_not_stale_interchangeable",
@@ -945,6 +813,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": 900,
         "soa_minimum": 300,
         "negative_type": None,
@@ -955,11 +824,7 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "negative_ttl_is_soa_derived": False,
-            "positive_ttl_is_rr_ttl": True,
-        },
+        "expect": {"may_serve_from_cache": True, "negative_ttl_is_soa_derived": False, "positive_ttl_is_rr_ttl": True},
         "reason": "positive cache TTL comes from RR TTL, not SOA — boundary marker"
     },
     {
@@ -977,6 +842,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -988,11 +854,7 @@ cases = [
         "ttl_zero": False,
         "cloudflare_memory_savings": "100TB fleet measurement",
         "cloudflare_is_semantic_permission": False,
-        "expect": {
-            "may_serve_from_cache": True,
-            "deployment_measurement": True,
-            "not_semantic_permission": True,
-        },
+        "expect": {"may_serve_from_cache": True, "deployment_measurement": True, "not_semantic_permission": True},
         "reason": "Cloudflare 100TB is deployment measurement, not TTL semantics permission"
     },
     {
@@ -1011,6 +873,7 @@ cases = [
         "rd_flag": True,
         "authority_reachable": True,
         "authority_rcode": 0,
+        "authority_aa": True,
         "soa_ttl": None,
         "soa_minimum": None,
         "negative_type": None,
@@ -1020,19 +883,191 @@ cases = [
         "implementation_max_ttl": 604800,
         "received_ttl": 300,
         "ttl_zero": False,
-        "expect": {
-            "may_serve_from_cache": False,
-            "must_not_serve_stale": True,
-            "serve_stale_allowed": False,
-            "exact_expiry": True,
-        },
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "exact_expiry": True},
         "reason": "now == stored_at+TTL — exactly expired, must not serve ordinarily"
+    },
+    # --- new: AA-bit distinction cases ---
+    {
+        "case_id": "c31_noerror_aa0_no_refresh",
+        "category": "serve_stale",
+        "qname": "example.com.",
+        "qtype": "A",
+        "stored_ttl": 300,
+        "stored_at": 0,
+        "now": 400,
+        "elapsed": 400,
+        "expired": True,
+        "remaining": -100,
+        "stale_age": 100,
+        "rrset_ttls": [300],
+        "rd_flag": True,
+        "authority_reachable": True,
+        "authority_rcode": 0,
+        "authority_aa": False,
+        "soa_ttl": None,
+        "soa_minimum": None,
+        "negative_type": None,
+        "stale_config_enabled": True,
+        "max_stale": 86400,
+        "failure_recheck_elapsed": 40,
+        "implementation_max_ttl": 604800,
+        "received_ttl": 300,
+        "ttl_zero": False,
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": False, "authoritative_refresh": False, "aa_insufficient": True},
+        "reason": "reachable NOERROR AA=0 — RCODE alone insufficient per RFC 8767, not authoritative refresh, but also not automatic stale (narrow correction)"
+    },
+    {
+        "case_id": "c32_nxdomain_aa0_no_refresh",
+        "category": "serve_stale",
+        "qname": "nonexistent.example.com.",
+        "qtype": "A",
+        "stored_ttl": 300,
+        "stored_at": 0,
+        "now": 400,
+        "elapsed": 400,
+        "expired": True,
+        "remaining": -100,
+        "stale_age": 100,
+        "rrset_ttls": [300],
+        "rd_flag": True,
+        "authority_reachable": True,
+        "authority_rcode": 3,
+        "authority_aa": False,
+        "soa_ttl": 3600,
+        "soa_minimum": 300,
+        "negative_type": None,
+        "stale_config_enabled": True,
+        "max_stale": 86400,
+        "failure_recheck_elapsed": 40,
+        "implementation_max_ttl": 604800,
+        "received_ttl": 300,
+        "ttl_zero": False,
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": False, "authoritative_refresh": False, "aa_insufficient": True},
+        "reason": "reachable NXDOMAIN AA=0 — RCODE alone insufficient, not authoritative refresh"
+    },
+    {
+        "case_id": "c33_nxdomain_aa1_refresh",
+        "category": "serve_stale",
+        "qname": "nonexistent.example.com.",
+        "qtype": "A",
+        "stored_ttl": 300,
+        "stored_at": 0,
+        "now": 400,
+        "elapsed": 400,
+        "expired": True,
+        "remaining": -100,
+        "stale_age": 100,
+        "rrset_ttls": [300],
+        "rd_flag": True,
+        "authority_reachable": True,
+        "authority_rcode": 3,
+        "authority_aa": True,
+        "soa_ttl": 3600,
+        "soa_minimum": 300,
+        "negative_type": None,
+        "stale_config_enabled": True,
+        "max_stale": 86400,
+        "failure_recheck_elapsed": 40,
+        "implementation_max_ttl": 604800,
+        "received_ttl": 300,
+        "ttl_zero": False,
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": True, "serve_stale_allowed": False, "authoritative_refresh": True},
+        "reason": "reachable NXDOMAIN AA=1 — refresh established"
+    },
+    # --- new: stale-response-TTL distinction ---
+    {
+        "case_id": "c34_stale_ttl_60_valid_not_recommended",
+        "category": "serve_stale",
+        "qname": "example.com.",
+        "qtype": "A",
+        "stored_ttl": 300,
+        "stored_at": 0,
+        "now": 400,
+        "elapsed": 400,
+        "expired": True,
+        "remaining": -100,
+        "stale_age": 100,
+        "rrset_ttls": [300],
+        "rd_flag": True,
+        "authority_reachable": False,
+        "authority_rcode": None,
+        "authority_aa": False,
+        "soa_ttl": None,
+        "soa_minimum": None,
+        "negative_type": None,
+        "stale_config_enabled": True,
+        "max_stale": 86400,
+        "failure_recheck_elapsed": 40,
+        "implementation_max_ttl": 604800,
+        "received_ttl": 300,
+        "ttl_zero": False,
+        "stale_response_ttl": 60,
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": True, "stale_ttl_valid": True, "stale_ttl_recommended_value": False},
+        "reason": "stale TTL 60 satisfies MUST >0, not RECOMMENDED 30"
+    },
+    {
+        "case_id": "c35_stale_ttl_zero_invalid",
+        "category": "serve_stale",
+        "qname": "example.com.",
+        "qtype": "A",
+        "stored_ttl": 300,
+        "stored_at": 0,
+        "now": 400,
+        "elapsed": 400,
+        "expired": True,
+        "remaining": -100,
+        "stale_age": 100,
+        "rrset_ttls": [300],
+        "rd_flag": True,
+        "authority_reachable": False,
+        "authority_rcode": None,
+        "authority_aa": False,
+        "soa_ttl": None,
+        "soa_minimum": None,
+        "negative_type": None,
+        "stale_config_enabled": True,
+        "max_stale": 86400,
+        "failure_recheck_elapsed": 40,
+        "implementation_max_ttl": 604800,
+        "received_ttl": 300,
+        "ttl_zero": False,
+        "stale_response_ttl": 0,
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": True, "stale_ttl_valid": False, "stale_ttl_recommended_value": False},
+        "reason": "stale TTL 0 violates MUST >0"
+    },
+    {
+        "case_id": "c36_stale_ttl_30_recommended",
+        "category": "serve_stale",
+        "qname": "example.com.",
+        "qtype": "A",
+        "stored_ttl": 300,
+        "stored_at": 0,
+        "now": 600,
+        "elapsed": 600,
+        "expired": True,
+        "remaining": -300,
+        "stale_age": 300,
+        "rrset_ttls": [300],
+        "rd_flag": True,
+        "authority_reachable": False,
+        "authority_rcode": None,
+        "authority_aa": False,
+        "soa_ttl": None,
+        "soa_minimum": None,
+        "negative_type": None,
+        "stale_config_enabled": True,
+        "max_stale": 86400,
+        "failure_recheck_elapsed": 40,
+        "implementation_max_ttl": 604800,
+        "received_ttl": 300,
+        "ttl_zero": False,
+        "stale_response_ttl": 30,
+        "expect": {"may_serve_from_cache": False, "must_not_serve_stale": False, "serve_stale_allowed": True, "stale_ttl_valid": True, "stale_ttl_recommended_value": True},
+        "reason": "stale TTL 30 satisfies MUST >0 and RECOMMENDED 30"
     },
 ]
 
-import pathlib
 out = pathlib.Path(__file__).parent / "cases.json"
 with open(out, "w") as f:
     json.dump({"seed": 42, "count": len(cases), "cases": cases}, f, indent=2)
-
 print(f"Wrote {len(cases)} cases to {out}")

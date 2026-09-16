@@ -46,11 +46,12 @@ RFC 8767 amends TTL to allow retention **beyond** expiry and serving stale **onl
 1. Record **expired** (`elapsed >= TTL`)
 2. Query has **RD=1** (recursive desired); RD=0 → referral, not stale (c11)
 3. `stale_config_enabled=true` and `stale_age <= max_stale` (c09 within 1–3 day window, c10 beyond ⇒ purged)
-4. **Failure to refresh**: authority unreachable *or* RCODE not in {0,3} (NoError/NXDomain refresh; others like SERVFAIL leave state intact and stale may be used — c08)
-5. Response TTL for stale records **MUST be >0**, RECOMMENDED 30s (c07/c08 set 30)
-6. TTL 0 records are **never cached** (`c13`/`c14`: transaction-only, no stale)
+4. **Authoritative refresh requires RCODE 0/3 + AA=1** (RFC 8767 §4). Reachable `NOERROR AA=1` (c05) and `NXDOMAIN AA=1` (c33) establish refresh; reachable `NOERROR AA=0` (c31) or `NXDOMAIN AA=0` (c32) — RCODE alone is insufficient, not authoritative refresh, and the lab does not turn that into a stale-MUST.
+5. **Failure to refresh**: authority unreachable *or* RCODE not in {0,3} (e.g., SERVFAIL) — stale may be used (c07/c08) provided AA-bit rule above does not claim refresh.
+6. **Stale response TTL: MUST >0, RECOMMENDED 30** — distinct outputs `stale_ttl_valid` (>0) and `stale_ttl_recommended_value` (==30). TTL 30 (c36) valid+recommended, TTL 60 (c34) valid but not recommended, TTL 0 (c35) invalid.
+7. TTL 0 records are **never cached** (`c13`/`c14`: transaction-only, no stale)
 
-Result: `c07`/`c08`/`c09` `serve_stale_allowed=true`; `c05`/`c06` (reachable authority) ⇒ `must_not_serve_stale=true`; `c26` (feature disabled) blocked; stale does **not** imply `may_serve_from_cache=true` — the two flags are distinct.
+Result: `c07`/`c08`/`c09`/`c34`/`c36` `serve_stale_allowed=true`; `c05`/`c06`/`c27`/`c33` refresh blocks stale; `c31`/`c32` AA-insufficient blocks stale without claiming refresh; `c26` (feature disabled) blocked; stale does **not** imply `may_serve_from_cache=true` — the two flags are distinct.
 
 ## Negative caching (RFC 2308)
 
@@ -84,21 +85,23 @@ Only comments **actually retrieved** via Firebase API are cited. IDs link to `ht
 
 If a proposition were not present in retrieved evidence, it would not be listed — the table above uses only the six actually retrieved.
 
-## Coverage map (30 synthetic cases, all TTL types + states)
+## Coverage map (36 synthetic cases, all TTL types + states)
 
 | Case | Category | What it proves |
 |---|---|---|
 | c01 c02 | positive inside TTL | Fresh cache hit allowed |
 | c03 c04 | impl freedom | Early evict/refresh before expiry is compliant |
 | c05 c06 | expired, auth reachable | Ordinary stale **must not** be served |
-| c07 c08 c09 | serve-stale (failure) | Stale **allowed** only on unreachable / SERVFAIL / within max-stale; response TTL=30 |
+| c07 c08 c09 c34 c36 | serve-stale (failure) | Stale **allowed** only on unreachable / SERVFAIL / within max-stale; TTL 30 valid+recommended, 60 valid, 0 invalid |
 | c10 | serve-stale | Beyond max-stale ⇒ purged, not served |
 | c11 c12 | RD flag | RD=0 expired ⇒ no stale (referral); fresh RD=0 still ok |
 | c13 c14 | TTL 0 | Transaction-only, never cached, no stale |
 | c15 c16 c17 | RRset | Differing TTLs ⇒ effective is min (RFC2181 §5.2) |
 | c18 c19 c20 c21 c22 | negative | SOA-derived TTL = min(TTL, MINIMUM); not RR TTL; expired negative must refetch |
 | c23 c24 c25 | clamp | Large TTL clamped to 7-day cap; small not clamped |
-| c26 c27 | stale guards | Disabled config / NoError refresh ⇒ no stale |
+| c26 c27 c33 | stale guards | Disabled config / NoError+NXDOMAIN AA=1 refresh ⇒ no stale |
+| c31 c32 | AA-bit | RCODE 0/3 AA=0 insufficient — not refresh, not stale-MUST |
+| c34 c35 c36 | stale TTL | MUST >0 vs RECOMMENDED 30: 60 valid, 0 invalid, 30 both |
 | c28 | boundary marker | Positive TTL is RR TTL, not SOA |
 | c29 | deployment | 100TB = measurement, not semantic permission |
 | c30 | exact boundary | elapsed==TTL ⇒ expired |
@@ -119,8 +122,8 @@ bash run.sh
 ## Recorded results (actual run)
 
 ```
-PASS 30/30 evaluator (2026-09-16T23:42:27Z) — Python 3.12.3
-PASS 13/13 independent tests — each derives expected from facts, not fixture labels
+PASS 36/36 evaluator — Python 3.12.3
+PASS 19/19 independent tests — each derives AA + TTL validity from facts, not fixture labels
 ```
 
 See `RESULTS.md`, `results_rows.csv`, `results_rows.json`.
