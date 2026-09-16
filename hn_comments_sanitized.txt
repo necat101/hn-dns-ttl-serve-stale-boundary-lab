@@ -1,0 +1,70 @@
+--- 49468083 by TangerineDream ---
+
+
+--- 49469807 by pbhjpbhj ---
+>that is only good for the period of the TTL of the record.<p>Not really, TTLs are often short, but IPs might not change for years.<p>You can probably generate your own TTL, at scale, and avoid many DNS requests.
+
+--- 49470124 by otterley ---
+In DNS, the owner of each record has full control over its TTL. Intermediary DNS servers are required to honor them and are not permitted to replace TTLs with their own.
+
+--- 49470257 by ButlerianJihad ---
+Actually that is not true. The IETF has expanded the definition of “TTL” and explicitly permits resolvers to serve “stale” RRs beyond their expiration time.<p><a href="https://www.rfc-editor.org/info/rfc8767/" rel="nofollow">https://www.rfc-editor.org/info/rfc8767/</a><p>As a corollary, there is obviously no floor on refetching unexpired RRs, of course, except for efficiency concerns.
+
+--- 49470290 by pbhjpbhj ---
+You are obliged to pass on the TTL, you're not obliged to cache according to it.<p>At least in my country (UK) I know of no law relating to DNS caching.<p>Why throwaway perfectly good data every few minutes that is only modified every couple of years, just so someone can move their domain quickly when they eventually wish to? It is my contention that a [caching] DNS service can do far better. Trusting user (domain owner) input blindly is not for me.
+
+--- 49470297 by seiferteric ---
+That's only when the authoritative server cant be reached though
+
+--- 49470406 by otterley ---
+It's not some sort of public law with public enforcement, but it is in the RFCs that govern the protocol.<p>I should be a bit clearer here; the TTL is an <i>upper bound</i> on how long it can be cached. Caches are free to consult more frequently but not less frequently. That said, out of respect for upstream cache operators and authoritative servers, most DNS caches honor TTLs as best they can.
+
+--- 49470326 by fc417fc802 ---
+Why would anyone want to use a DNS resolver that tampered with records on a large scale? The TTL is intentionally set by the originator of the record.<p>Or alternatively, if you don't tamper why would I want to use a service that serves stale data?
+
+--- 49473714 by inigyou ---
+The IETF isn't the internet police. You don't have to follow its advice.
+
+--- 49470370 by lpapez ---
+This is the right way to deliver software.<p>Produce working product first, validate the idea, stabilize the business, start generating profit, and then you can start optimizing your costs.<p>In fact optimization is by far the easiest part of the process because there are many system programming experts on this HN thread who consider these optimizations to be trivial.
+
+--- 49468431 by irdc ---
+This is why system programming still matters.<p>Looks like they're missing the obvious optimisation of putting the record data right after the CacheEntry members instead of allocating memory separately though. But that might just be me as a C-programmer talking and not be all that easy in Rust.
+
+--- 49468667 by strenholme ---
+With my own MaraDNS, I aggressively optimized the memory usage of blacklist entries by having a single really big malloc() to allocate the memory for the entries, then traversing that memory block for potentially blacklisted entries.<p>When I was using one malloc() per entry, a large blacklist took up 237 megabytes of memory.  The same blacklist, once optimized to be loaded with a single malloc() call, only took up 9.5 megabytes of memory.<p><a href="https://samboy.github.io/blog/entries/MaraDNS.html#BlogEntry-2022-12-28" rel="nofollow">https://samboy.github.io/blog/entries/MaraDNS.html#BlogEntry...</a>
+
+--- 49469283 by vinkelhake ---
+These seem like some fairly standard approaches for reducing memory usage. I can't help to think that the approach of joining several distinct list into a single one in some way undercuts Rust's safety guarantees.<p>If you previous had three distinct Vec objects, then Rust would guarantee that you can't index out of bounds. If you now put all those objects into a single Vec and rely on offsets, then you now open the door to indexing out of range of these sub-slices without any panics.<p>It's a minor point, and it doesn't really invalidate the optimization, but I'm surprised the article didn't mention it.
+
+--- 49474335 by grep_it ---
+This reminds me how you can save a bunch of bytes just by making sure your structs are aligned. In go for example:<p><pre><code>  type Wasteful struct {
+    a int16
+    b int
+    c byte
+  }
+
+  type Aligned struct {
+    b int
+    a int16
+    c byte
+  }
+
+</code></pre>
+Will have sizes of 24bytes and 16bytes (on a 64bit system). Same data 8bytes more. If you are storing millions of those objects, then it adds up.
+
+--- 49474452 by Agentlien ---
+One of my proudest professional moments was when me and three others managed to reduce memory load of the game Wavetale from 20+GiB to under 3GiB so we could port it to Nintendo Switch.<p>The 100 TiB number almost gives me vertigo. Though in this context it was "just" 50%
+
+--- 49473466 by ww520 ---
+Not sure what they use to hold the cache key and entry. If a hashmap is used, then a radix tree (adaptive radix tree) would be better in saving memory space. Most of content of the qname field of the CacheKey is hostname, like www.site.com. The reverse version com.site.www fits nicely in navigation path of a radix tree. The common prefixes like "com." are shared and compressed in the parent nodes of the tree.<p>Even a BTree with compressed prefix keys can save space in the qname.
+
+--- 49472612 by BikiniPrince ---
+Funny thing about cloudflare. I have a dns warming script that uses their top 1k or 10k addresses. Then when my master starts up it warms the entire cache. Everything else uses memcache so the cluster is nice and toasty. As far as I can tell no one else releases domain statistics like them.
+
+--- 49470365 by edflsafoiewq ---
+General theme: A programming language's native in-memory object format is typically optimized for random access, uniformity, and mutability (fields at fixed offsets, etc). Serialization formats for network or disk tend to be designed explicitly to be more compact. But you can design your own in-memory representation too, with the properties you need.
+
+--- 49470006 by 0xAstro ---
+It's weird that it took so long for these trivial optimizations but it might just be that they were working on optimizing other stuff.
+

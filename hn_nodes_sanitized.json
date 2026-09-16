@@ -1,0 +1,292 @@
+{
+  "49468083": {
+    "by": "TangerineDream",
+    "descendants": 286,
+    "id": 49468083,
+    "kids": [
+      49470370,
+      49468431,
+      49468667,
+      49469283,
+      49474335,
+      49474452,
+      49473466,
+      49472612,
+      49470365,
+      49470006,
+      49469348,
+      49469307,
+      49472273,
+      49471570,
+      49474411,
+      49472918,
+      49470066,
+      49478458,
+      49473601,
+      49473584,
+      49472447,
+      49474056,
+      49471487,
+      49468769,
+      49472537,
+      49476814,
+      49469048,
+      49476419,
+      49474685,
+      49479712,
+      49475790,
+      49472089,
+      49489158,
+      49474733,
+      49478251,
+      49475791,
+      49472475,
+      49478851,
+      49470774,
+      49479624,
+      49472861,
+      49476149,
+      49471939,
+      49470014,
+      49471692,
+      49474650,
+      49468957,
+      49468379
+    ],
+    "score": 925,
+    "time": 1787851077,
+    "title": "Saving 100 terabytes of memory by optimizing 1.1.1.1's DNS cache",
+    "type": "story",
+    "url": "https://blog.cloudflare.com/dns-cache-memory-optimization-1111/"
+  },
+  "49469807": {
+    "by": "pbhjpbhj",
+    "id": 49469807,
+    "kids": [
+      49470326,
+      49470124,
+      49469920,
+      49471151
+    ],
+    "parent": 49469204,
+    "text": "&gt;that is only good for the period of the TTL of the record.<p>Not really, TTLs are often short, but IPs might not change for years.<p>You can probably generate your own TTL, at scale, and avoid many DNS requests.",
+    "time": 1787858052,
+    "type": "comment"
+  },
+  "49470124": {
+    "by": "otterley",
+    "id": 49470124,
+    "kids": [
+      49470257,
+      49470330,
+      49470290
+    ],
+    "parent": 49469807,
+    "text": "In DNS, the owner of each record has full control over its TTL. Intermediary DNS servers are required to honor them and are not permitted to replace TTLs with their own.",
+    "time": 1787859546,
+    "type": "comment"
+  },
+  "49470257": {
+    "by": "ButlerianJihad",
+    "id": 49470257,
+    "kids": [
+      49470297
+    ],
+    "parent": 49470124,
+    "text": "Actually that is not true. The IETF has expanded the definition of \u201cTTL\u201d and explicitly permits resolvers to serve \u201cstale\u201d RRs beyond their expiration time.<p><a href=\"https:&#x2F;&#x2F;www.rfc-editor.org&#x2F;info&#x2F;rfc8767&#x2F;\" rel=\"nofollow\">https:&#x2F;&#x2F;www.rfc-editor.org&#x2F;info&#x2F;rfc8767&#x2F;</a><p>As a corollary, there is obviously no floor on refetching unexpired RRs, of course, except for efficiency concerns.",
+    "time": 1787860178,
+    "type": "comment"
+  },
+  "49470290": {
+    "by": "pbhjpbhj",
+    "id": 49470290,
+    "kids": [
+      49470406
+    ],
+    "parent": 49470124,
+    "text": "You are obliged to pass on the TTL, you&#x27;re not obliged to cache according to it.<p>At least in my country (UK) I know of no law relating to DNS caching.<p>Why throwaway perfectly good data every few minutes that is only modified every couple of years, just so someone can move their domain quickly when they eventually wish to? It is my contention that a [caching] DNS service can do far better. Trusting user (domain owner) input blindly is not for me.",
+    "time": 1787860337,
+    "type": "comment"
+  },
+  "49470297": {
+    "by": "seiferteric",
+    "id": 49470297,
+    "parent": 49470257,
+    "text": "That&#x27;s only when the authoritative server cant be reached though",
+    "time": 1787860360,
+    "type": "comment"
+  },
+  "49470406": {
+    "by": "otterley",
+    "id": 49470406,
+    "kids": [
+      49473714
+    ],
+    "parent": 49470290,
+    "text": "It&#x27;s not some sort of public law with public enforcement, but it is in the RFCs that govern the protocol.<p>I should be a bit clearer here; the TTL is an <i>upper bound</i> on how long it can be cached. Caches are free to consult more frequently but not less frequently. That said, out of respect for upstream cache operators and authoritative servers, most DNS caches honor TTLs as best they can.",
+    "time": 1787860864,
+    "type": "comment"
+  },
+  "49470326": {
+    "by": "fc417fc802",
+    "id": 49470326,
+    "kids": [
+      49470733
+    ],
+    "parent": 49469807,
+    "text": "Why would anyone want to use a DNS resolver that tampered with records on a large scale? The TTL is intentionally set by the originator of the record.<p>Or alternatively, if you don&#x27;t tamper why would I want to use a service that serves stale data?",
+    "time": 1787860486,
+    "type": "comment"
+  },
+  "49473714": {
+    "by": "inigyou",
+    "id": 49473714,
+    "kids": [
+      49474266
+    ],
+    "parent": 49470406,
+    "text": "The IETF isn&#x27;t the internet police. You don&#x27;t have to follow its advice.",
+    "time": 1787884582,
+    "type": "comment"
+  },
+  "49470370": {
+    "by": "lpapez",
+    "id": 49470370,
+    "kids": [
+      49473112,
+      49473913,
+      49470650,
+      49483651,
+      49472705,
+      49477793,
+      49475913,
+      49470761,
+      49477287,
+      49476238,
+      49472334,
+      49476438,
+      49476849,
+      49482878,
+      49476176,
+      49475208,
+      49473072,
+      49472372,
+      49472242
+    ],
+    "parent": 49468083,
+    "text": "This is the right way to deliver software.<p>Produce working product first, validate the idea, stabilize the business, start generating profit, and then you can start optimizing your costs.<p>In fact optimization is by far the easiest part of the process because there are many system programming experts on this HN thread who consider these optimizations to be trivial.",
+    "time": 1787860681,
+    "type": "comment"
+  },
+  "49468431": {
+    "by": "irdc",
+    "id": 49468431,
+    "kids": [
+      49468606,
+      49470463,
+      49470391,
+      49469072,
+      49472076,
+      49469523,
+      49468706,
+      49473462
+    ],
+    "parent": 49468083,
+    "text": "This is why system programming still matters.<p>Looks like they&#x27;re missing the obvious optimisation of putting the record data right after the CacheEntry members instead of allocating memory separately though. But that might just be me as a C-programmer talking and not be all that easy in Rust.",
+    "time": 1787852452,
+    "type": "comment"
+  },
+  "49468667": {
+    "by": "strenholme",
+    "id": 49468667,
+    "kids": [
+      49478788,
+      49472504
+    ],
+    "parent": 49468083,
+    "text": "With my own MaraDNS, I aggressively optimized the memory usage of blacklist entries by having a single really big malloc() to allocate the memory for the entries, then traversing that memory block for potentially blacklisted entries.<p>When I was using one malloc() per entry, a large blacklist took up 237 megabytes of memory.  The same blacklist, once optimized to be loaded with a single malloc() call, only took up 9.5 megabytes of memory.<p><a href=\"https:&#x2F;&#x2F;samboy.github.io&#x2F;blog&#x2F;entries&#x2F;MaraDNS.html#BlogEntry-2022-12-28\" rel=\"nofollow\">https:&#x2F;&#x2F;samboy.github.io&#x2F;blog&#x2F;entries&#x2F;MaraDNS.html#BlogEntry...</a>",
+    "time": 1787853325,
+    "type": "comment"
+  },
+  "49469283": {
+    "by": "vinkelhake",
+    "id": 49469283,
+    "kids": [
+      49469675,
+      49469396,
+      49471627,
+      49473671,
+      49471284,
+      49469373
+    ],
+    "parent": 49468083,
+    "text": "These seem like some fairly standard approaches for reducing memory usage. I can&#x27;t help to think that the approach of joining several distinct list into a single one in some way undercuts Rust&#x27;s safety guarantees.<p>If you previous had three distinct Vec objects, then Rust would guarantee that you can&#x27;t index out of bounds. If you now put all those objects into a single Vec and rely on offsets, then you now open the door to indexing out of range of these sub-slices without any panics.<p>It&#x27;s a minor point, and it doesn&#x27;t really invalidate the optimization, but I&#x27;m surprised the article didn&#x27;t mention it.",
+    "time": 1787855841,
+    "type": "comment"
+  },
+  "49474335": {
+    "by": "grep_it",
+    "id": 49474335,
+    "kids": [
+      49474407,
+      49477105
+    ],
+    "parent": 49468083,
+    "text": "This reminds me how you can save a bunch of bytes just by making sure your structs are aligned. In go for example:<p><pre><code>  type Wasteful struct {\n    a int16\n    b int\n    c byte\n  }\n\n  type Aligned struct {\n    b int\n    a int16\n    c byte\n  }\n\n</code></pre>\nWill have sizes of 24bytes and 16bytes (on a 64bit system). Same data 8bytes more. If you are storing millions of those objects, then it adds up.",
+    "time": 1787890897,
+    "type": "comment"
+  },
+  "49474452": {
+    "by": "Agentlien",
+    "id": 49474452,
+    "kids": [
+      49474527
+    ],
+    "parent": 49468083,
+    "text": "One of my proudest professional moments was when me and three others managed to reduce memory load of the game Wavetale from 20+GiB to under 3GiB so we could port it to Nintendo Switch.<p>The 100 TiB number almost gives me vertigo. Though in this context it was &quot;just&quot; 50%",
+    "time": 1787892165,
+    "type": "comment"
+  },
+  "49473466": {
+    "by": "ww520",
+    "id": 49473466,
+    "kids": [
+      49497696,
+      49476600
+    ],
+    "parent": 49468083,
+    "text": "Not sure what they use to hold the cache key and entry. If a hashmap is used, then a radix tree (adaptive radix tree) would be better in saving memory space. Most of content of the qname field of the CacheKey is hostname, like www.site.com. The reverse version com.site.www fits nicely in navigation path of a radix tree. The common prefixes like &quot;com.&quot; are shared and compressed in the parent nodes of the tree.<p>Even a BTree with compressed prefix keys can save space in the qname.",
+    "time": 1787882046,
+    "type": "comment"
+  },
+  "49472612": {
+    "by": "BikiniPrince",
+    "id": 49472612,
+    "parent": 49468083,
+    "text": "Funny thing about cloudflare. I have a dns warming script that uses their top 1k or 10k addresses. Then when my master starts up it warms the entire cache. Everything else uses memcache so the cluster is nice and toasty. As far as I can tell no one else releases domain statistics like them.",
+    "time": 1787873513,
+    "type": "comment"
+  },
+  "49470365": {
+    "by": "edflsafoiewq",
+    "id": 49470365,
+    "kids": [
+      49471828
+    ],
+    "parent": 49468083,
+    "text": "General theme: A programming language&#x27;s native in-memory object format is typically optimized for random access, uniformity, and mutability (fields at fixed offsets, etc). Serialization formats for network or disk tend to be designed explicitly to be more compact. But you can design your own in-memory representation too, with the properties you need.",
+    "time": 1787860641,
+    "type": "comment"
+  },
+  "49470006": {
+    "by": "0xAstro",
+    "id": 49470006,
+    "kids": [
+      49470090
+    ],
+    "parent": 49468083,
+    "text": "It&#x27;s weird that it took so long for these trivial optimizations but it might just be that they were working on optimizing other stuff.",
+    "time": 1787858933,
+    "type": "comment"
+  }
+}
