@@ -1,8 +1,8 @@
-# VERIFY — fresh unauthenticated public clone — commit A execution target
+# VERIFY — fresh unauthenticated public clone — commit C execution target; commit D records
 
 This file records **actual** evidence from a fresh unauthenticated clone.
-It does **not** claim to verify itself. Commit **A** was the execution target;
-this commit **B** only records the transcript.
+Commit **C** was the execution target; this commit **D** only records the transcript.
+Do not claim D verified itself. D is documentation-only.
 
 ## How to reproduce (public, no credentials, no file://)
 
@@ -17,55 +17,47 @@ python3 evaluate.py
 python3 run_lab.py
 python3 tests/test_lab.py
 bash run.sh
+git diff --exit-code -- RESULTS.md results_rows.csv results_rows.json
 git status --porcelain
-git diff --stat
 ```
 
-## Actual transcript (captured 2026-09-17T00:00 UTC from clone HEAD = A)
+## Transcript of prior A verification (retained for history)
+
+A = 8425160e6c351f2c2f98cda6cc68dbe4e61f827f was matched and executed with 36/36 and 19/19.
+
+## Actual transcript for C (captured 2026-09-17T00:12 UTC from clone HEAD = C)
 
 ```
-Cloning into '/tmp/hn-verify2'...
-HEAD=8425160e6c351f2c2f98cda6cc68dbe4e61f827f
-COMMIT_A=8425160e6c351f2c2f98cda6cc68dbe4e61f827f → MATCH ✓
+Cloning into '/tmp/hn-verify'...
+CLONE_HEAD=a80785c88d04e1849fa310a2e860fa46d1a2e1f1
+COMMIT_C=a80785c88d04e1849fa310a2e860fa46d1a2e1f1 → MATCH ✓
+origin  https://github.com/necat101/hn-dns-ttl-serve-stale-boundary-lab.git (fetch/push)
 Python 3.12.3
-origin  https://github.com/necat101/hn-dns-ttl-serve-stale-boundary-lab.git (fetch)
-origin  https://github.com/necat101/hn-dns-ttl-serve-stale-boundary-lab.git (push)
-8425160e6c351f2c2f98cda6cc68dbe4e61f827f
 compile: OK
-evaluator: 36/36 PASS
-  PASS c01 ... c30 (see RESULTS.md)
-  PASS c31_noerror_aa0_no_refresh — AA=0 insufficient (not refresh, not stale-MUST)
-  PASS c32_nxdomain_aa0_no_refresh — AA=0 insufficient
-  PASS c33_nxdomain_aa1_refresh — AA=1 refresh
-  PASS c34_stale_ttl_60_valid_not_recommended — TTL 60 valid, not recommended
-  PASS c35_stale_ttl_zero_invalid — TTL 0 invalid (MUST >0 violated)
-  PASS c36_stale_ttl_30_recommended — TTL 30 valid+recommended
-run_lab: 36/36 PASS
+evaluator: 36/36 PASS (c01..c36 all PASS; c31 AA=0 insufficient, c32 AA=0 insufficient, c33 AA=1 refresh, c34 TTL60 valid not-rec, c35 TTL0 invalid, c36 TTL30 valid+rec)
+run_lab: 36/36 PASS (elapsed 0.001s)
 tests: 19/19 passed (each derives AA-bit + TTL validity from rcode+AA+ttl facts)
 run.sh: 19/19 passed — All checks passed.
-git rev-parse HEAD = 8425160e6c351f2c2f98cda6cc68dbe4e61f827f
+git diff --exit-code -- RESULTS.md results_rows.csv results_rows.json → exit 0 — EVIDENCE BYTE-STABLE ✓
+git status --porcelain → (empty) — clean
+git rev-parse HEAD = a80785c88d04e1849fa310a2e860fa46d1a2e1f1
 git remote -v = https://github.com/necat101/hn-dns-ttl-serve-stale-boundary-lab.git
-git status --porcelain = M RESULTS.md (single timestamp line)
-git diff RESULTS.md: Generated: 2026-09-16T23:59:22Z → 2026-09-17T00:00:23Z (1 line)
 ```
 
-Full row-level outputs in `results_rows.csv` / `results_rows.json`. No live DNS queries, no sockets.
+Required condition **met**: rerunning the lab leaves every tracked generated evidence file unchanged.
+
+Prior clones showed `M RESULTS.md` (timestamp drift); after C the line reads `Generated: deterministic — seed 42, cases 36, evaluator stable (no wall-clock)` and the diff is zero.
 
 ## Tested implementation revision
 
 ```
-A = 8425160e6c351f2c2f98cda6cc68dbe4e61f827f
+C = a80785c88d04e1849fa310a2e860fa46d1a2e1f1
 ```
-This file is commit **B** (documentation-only), which records the transcript.
-**A, not B, was the execution target.** Do not claim B verifies itself.
 
-## Rerun diff honesty
-
-Rerunning the lab in the fresh clone changed only the `Generated:` timestamp line in `RESULTS.md`
-(1 insertion, 1 deletion). No changes to `results_rows.csv` / `results_rows.json` / `cases.json` /
-`evaluate.py` / `tests/test_lab.py`. The tree is not claimed clean — the timestamp drift is reported above.
+This file is commit **D** (documentation-only), which records the transcript.
+**C, not D, was the execution target.** No evaluator/fixtures/results changed in D.
 
 ## Actions
 
-Workflow `.github/workflows/verify.yml` — see commit B status via GitHub Actions API.
-Previous run for A (8425160) was `completed success`. B's status is reported separately (not reused).
+Workflow `.github/workflows/verify.yml` — D's run is inspected separately via GitHub API.
+Do not reuse B's run 35164827792 as evidence for D; D's status is reported from its own run.
