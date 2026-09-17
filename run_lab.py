@@ -91,7 +91,7 @@ bash run.sh
 ## Detailed rows
 See results_rows.csv / results_rows.json
 
-Generated: {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+Generated: deterministic — seed 42, cases 36, evaluator stable (no wall-clock)
 """
 pathlib.Path("RESULTS.md").write_text(results_md)
 print(f"PASS {pass_n}/{len(cases)} FAIL {fail_n} elapsed {elapsed:.3f}s")

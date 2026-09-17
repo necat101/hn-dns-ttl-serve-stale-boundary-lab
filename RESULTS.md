@@ -32,4 +32,4 @@ bash run.sh
 ## Detailed rows
 See results_rows.csv / results_rows.json
 
-Generated: 2026-09-16T23:59:22Z
+Generated: deterministic — seed 42, cases 36, evaluator stable (no wall-clock)
